@@ -1,4 +1,4 @@
-name: Publish to Confluence
+name: Release Notes to Confluence Publisher
 author: Gershon Alvais
 description: Confluence Release BOT. This action will create a release page in confluence with the release notes.
 branding:
