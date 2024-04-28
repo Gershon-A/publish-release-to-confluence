@@ -19,6 +19,8 @@ concurrency: release
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      releaseVersion: ${{ inputs.releaseVersion }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -114,7 +116,7 @@ jobs:
           title: "Release: ${{ github.ref_name }}"
           parentId: ${{ vars.PAGE_ID}}
           ConfluenceBaseUrl: 'https://smart-cooking.atlassian.net'
-          tag: ${{ github.ref_name }}
+          tag: ${{ needs.release.outputs.releaseVersion }}
           confluence_email: ${{ vars.CONFLUENCE_EMAIL }}
           confluence_api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
           appName:   ${{ github.event.repository.name }}
