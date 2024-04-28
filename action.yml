@@ -133,3 +133,4 @@ runs:
         pageId=$(echo "$response" | jq -r '.id')
         echo "Page ID: $pageId"
         echo "pageId=$pageId" >> $GITHUB_ENV
+        echo "::save-state name=pageId::$pageId"
