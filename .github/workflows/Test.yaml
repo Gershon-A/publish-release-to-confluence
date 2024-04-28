@@ -31,8 +31,8 @@ jobs:
         if: success()
         run: |
           # Retrieve the pageId output from the Run action step
-          pageId=${{ steps.run_action.outputs.pageId }}
+          pageId=${{ env.pageId }}
           echo "Page ID: $pageId"
           curl --request DELETE \
-          --url 'https://smart-cooking.atlassian.net/wiki/api/v2/pages/$pageId' \
-          --user '${{ vars.CONFLUENCE_EMAIL }}:${{ secrets.CONFLUENCE_API_TOKEN }}'
+          --url "https://smart-cooking.atlassian.net/wiki/api/v2/pages/$pageId" \
+          --user "${{ vars.CONFLUENCE_EMAIL }}:${{ secrets.CONFLUENCE_API_TOKEN }}"
