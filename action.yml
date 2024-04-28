@@ -132,4 +132,4 @@ runs:
         echo "Response: $response"
         pageId=$(echo "$response" | jq -r '.id')
         echo "Page ID: $pageId"
-        echo "::set-output name=pageId::$pageId"
+        echo "pageId=$pageId" >> $GITHUB_ENV
