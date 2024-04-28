@@ -91,7 +91,7 @@ To use this action in your GitHub workflow, add the following step:
 
 ```yaml
 - name: Publish to Confluence
-  uses: uses: Gershon-A/publish-release-to-confluence@v1.0.0
+  uses: uses: Gershon-A/publish-release-to-confluence@vv1.0.0
   with:
     spaceId: '<spaceId>'
     status: '<status>'
@@ -115,7 +115,7 @@ Example:
     needs: [ release ]
     steps:
       - name: Publish to Confluence Action
-        uses: Gershon-A/publish-release-to-confluence@v1.0.0
+        uses: Gershon-A/publish-release-to-confluence@vv1.0.0
         with:
           confluence_email: ${{ vars.CONFLUENCE_EMAIL }}
           confluence_api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
