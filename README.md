@@ -122,8 +122,7 @@ Example:
           repoName: ${{ github.event.repository.name }}
           tag: ${{ github.ref_name }}
           appName: ${{ github.event.repository.name }}
-        env:
-          templates-token: ${{ secrets.SUBMODULES_TOKEN }}
+
 ```
 
     Replace the placeholders (<...>) with your actual values.
