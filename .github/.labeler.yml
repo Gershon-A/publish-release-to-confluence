@@ -1,0 +1,7 @@
+{
+  "enhancement": ["^feature\/", "^improvement\/"],
+  "bug": ["^bugfix\/", "^hotfix\/"],
+  "documentation": ["^docs\/"],
+  "third-party": ["^upgrade\/", "^library\/"],
+  "security": ["^security\/"],
+}
