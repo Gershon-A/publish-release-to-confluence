@@ -1,0 +1,101 @@
+name: Snyk Infrastructure as Code security
+author: Gershon Alvais
+description: Snyk Infrastructure as Code security scans and report to Snyk UI
+inputs:
+  SNYK_TOKEN:
+    required: true
+    type: 'string'
+    description: 'Snyk API token'
+  SNYK_ORG_ID:
+    required: true
+    type: 'string'
+    description: 'Snyk organization ID'
+  SNYK_PROJECT_NAME:
+    required: false
+    type: 'string'
+    description: 'Snyk project name'
+  SNYK_PROJECT_ID:
+    required: false
+    type: 'string'
+    description: 'Snyk project ID'
+  SEVERITY_THRESHOLD:
+    required: false
+    type: 'string'
+    description: 'Severity threshold'
+  FILE:
+      required: false
+      type: 'string'
+      description: 'iaC file or directory to scan'
+      default: '*'
+  JSON_FILE_OUTPUT:
+      required: false
+      type: 'string'
+      description: 'Snyk JSON file output'
+      default: snyk.json
+  update_pr_with_scan_results:
+      required: false
+      type: 'string'
+      description: 'Update PR with scan results'
+      default: false
+
+runs:
+    using: "composite"
+    steps:
+
+      - name: Run Snyk to check Kubernetes manifest file for issues
+        id: snyk
+        uses: snyk/actions/iac@master
+        env:
+          SNYK_TOKEN:   ${{ inputs.SNYK_TOKEN }}
+        with:
+          file: ${{ inputs.FILE }}
+          args: --severity-threshold=${{ inputs.SEVERITY_THRESHOLD }} --report --org=${{ inputs.SNYK_ORG_ID }} --json-file-output=${{ inputs.JSON_FILE_OUTPUT}}
+
+      - name: Post results to PR
+        if: inputs.update_pr_with_scan_results == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            // Read the results from snyk.json
+            const results = JSON.parse(fs.readFileSync('snyk.json', 'utf8'));
+            // Create a summary
+            const summary = results.map(result => ({
+              targetFile: result.targetFile,
+              ok: result.ok ? "✅" : "❌"
+            }));
+            // Create a Markdown table
+            let table = "| Target File | OK |\n| --- | --- |\n";
+            summary.forEach(item => {
+              table += `| ${item.targetFile} | ${item.ok} |\n`;
+            });
+            // Get the issue or pull request number
+            const number = (context.issue && context.issue.number) || (context.payload.pull_request && context.payload.pull_request.number);
+            if (number) {
+              // Get all comments of the issue or pull request
+              const comments = await github.rest.issues.listComments({
+                issue_number: number,
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              });
+              // Find the existing comment
+              const existingComment = comments.data.find(comment => comment.user.login === 'github-actions[bot]');
+              // If the existing comment is found, delete it
+              if (existingComment) {
+                await github.rest.issues.deleteComment({
+                  comment_id: existingComment.id,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo
+                });
+              }
+              // Create a new comment
+              await github.rest.issues.createComment({
+                issue_number: number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: table
+              });
+            } else {
+              console.log('Issue or pull request number is undefined');
+            }
+          debug: false
