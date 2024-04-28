@@ -1,44 +1,37 @@
-name: Test Snyk scan action
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    types: [opened, synchronize, reopened]
+name: Test Action
 
-permissions:
-  issues: write
-  pull-requests: write
+on: [push, pull_request]
 
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v4
-    - name: Run action
-      id: snyk-iac-code-security-checks
-      uses: ./ # Uses an action in the root directory
-      with:
-        SNYK_TOKEN:         ${{ secrets.SNYK_TOKEN }}
-        SNYK_ORG_ID:        ${{ secrets.SNYK_ORG_ID }}
-        SNYK_PROJECT_NAME:  ${{ secrets.SNYK_PROJECT_NAME }}
-        SNYK_PROJECT_ID:    ${{ secrets.SNYK_PROJECT_ID }}
-        SEVERITY_THRESHOLD: 'high'
-        JSON_FILE_OUTPUT: 'snyk.json'
-        FILE: example-*
-        update_pr_with_scan_results: true
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Check scan results
-      run: |
-        # Parse the Snyk scan output
-        scan_output=$(cat ${{ steps.snyk-iac-code-security-checks.outputs.JSON_FILE_OUTPUT }})
+      - name: Run action
+        id: run_action
+        uses: ./
+        with:
+          spaceId: ${{ vars.SPACE_ID}}
+          status: 'current'
+          title: "Release: ${{ github.ref_name }}"
+          parentId: ${{ vars.PAGE_ID}}
+          ConfluenceBaseUrl: 'https://smart-cooking.atlassian.net'
+          tag: v1.0.0
+          confluence_email: ${{ vars.CONFLUENCE_EMAIL }}
+          confluence_api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+          appName:   ${{ github.event.repository.name }}
+          repoOwner: ${{ github.repository_owner }}
+          repoName:  ${{ github.event.repository.name }}
 
-        # Get the severity level from the previous step
-        severity="${{ steps.snyk-iac-code-security-checks.outputs.SEVERITY_THRESHOLD }}"
-
-        # Check the scan output for the specific severity level
-        if [[ $scan_output == *"$severity severity"* ]]; then
-          echo "Scan results check failed"
-          exit 1
-        else
-          echo "Scan results check passed"
-        fi
+      - name: Clean up
+        id: cleanup
+        if: success()
+        run: |
+          echo "Delete Page"
+          pageId=${{ steps.run_action.outputs.pageId }}
+          curl --request DELETE \
+          --url 'https://smart-cooking.atlassian.net/wiki/api/v2/pages/$pageId' \
+          --user 'email@example.com:<api_token>'

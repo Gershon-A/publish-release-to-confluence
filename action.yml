@@ -1,101 +1,135 @@
-name: Snyk Infrastructure as Code security
+name: Publish to Confluence
 author: Gershon Alvais
-description: Snyk Infrastructure as Code security scans and report to Snyk UI
+description: Confluence Release BOT. This action will create a release page in confluence with the release notes.
+branding:
+  icon: "book"
+  color: "blue"
+
 inputs:
-  SNYK_TOKEN:
+  # Confluence configs
+  spaceId:
+    description: Confluence space id. This is the space where the release page will be created.
     required: true
-    type: 'string'
-    description: 'Snyk API token'
-  SNYK_ORG_ID:
+    type: string
+  status:
     required: true
-    type: 'string'
-    description: 'Snyk organization ID'
-  SNYK_PROJECT_NAME:
-    required: false
-    type: 'string'
-    description: 'Snyk project name'
-  SNYK_PROJECT_ID:
-    required: false
-    type: 'string'
-    description: 'Snyk project ID'
-  SEVERITY_THRESHOLD:
-    required: false
-    type: 'string'
-    description: 'Severity threshold'
-  FILE:
-      required: false
-      type: 'string'
-      description: 'iaC file or directory to scan'
-      default: '*'
-  JSON_FILE_OUTPUT:
-      required: false
-      type: 'string'
-      description: 'Snyk JSON file output'
-      default: snyk.json
-  update_pr_with_scan_results:
-      required: false
-      type: 'string'
-      description: 'Update PR with scan results'
-      default: false
+    type: string
+  title:
+    description: Title of the page.  Release tag.
+    required: true
+    type: string
+  parentId:
+    description: Parent page id. The release page will be created under this page.
+    required: true
+    type: string
+  ConfluenceBaseUrl:
+    description: Confluence base url
+    required: true
+    type: string
+  ConfluenceSpaceKey:
+    description: Confluence space key
+    type: string
+  # Release notes
+  tag:
+    required: true
+    type: string
+  confluence_email:
+    description: 'Confluence Email'
+    required: true
+    type: string
+  confluence_api_token:
+    description: 'Confluence API Token'
+    required: true
+    type: string
+  appName:
+    Description: Name of the app. This will be used in the release notes.
+    required: true
+    type: string
+  repoOwner:
+    Description: Owner of the repository. This will be used to fetch the release notes.
+    required: true
+    type: string
+  repoName:
+    Description: Name of the repository. This will be used to fetch the release notes.
+    required: true
+    type: string
 
 runs:
-    using: "composite"
-    steps:
+  using: "composite"
+  steps:
+    - name: Get Release
+      id: get-release
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const tag = '${{ inputs.tag }}';
+          const release = await github.rest.repos.getReleaseByTag({
+            owner: '${{ inputs.repoOwner }}',
+            repo: '${{ inputs.repoName }}',
+            tag: tag
+          });
+          if (!release || !release.data.body) {
+              console.error('Invalid release');
+              return;
+          }
+          console.log(release.data.body);
+          return {
+              body: release.data.body,
+              url: `https://github.com/${{ inputs.repoOwner }}/${{ inputs.repoName }}/releases/tag/${tag}`
+          };
 
-      - name: Run Snyk to check Kubernetes manifest file for issues
-        id: snyk
-        uses: snyk/actions/iac@master
-        env:
-          SNYK_TOKEN:   ${{ inputs.SNYK_TOKEN }}
-        with:
-          file: ${{ inputs.FILE }}
-          args: --severity-threshold=${{ inputs.SEVERITY_THRESHOLD }} --report --org=${{ inputs.SNYK_ORG_ID }} --json-file-output=${{ inputs.JSON_FILE_OUTPUT}}
+    - name: Post Release Notes to Confluence
+      id: post_to_confluence
+      shell: bash
+      env:
+        RELEASE_NOTES: ${{ fromJSON(steps.get-release.outputs.result).body }}
+        RELEASE_URL: ${{ fromJSON(steps.get-release.outputs.result).url }}
+      run: |
+        # Add additional line before the content
+        RELEASE_NOTES="✅ New *${{ inputs.appName }}* Release [${{ inputs.tag }}](${RELEASE_URL}) $(date)\n\n${RELEASE_NOTES}"
 
-      - name: Post results to PR
-        if: inputs.update_pr_with_scan_results == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            // Read the results from snyk.json
-            const results = JSON.parse(fs.readFileSync('snyk.json', 'utf8'));
-            // Create a summary
-            const summary = results.map(result => ({
-              targetFile: result.targetFile,
-              ok: result.ok ? "✅" : "❌"
-            }));
-            // Create a Markdown table
-            let table = "| Target File | OK |\n| --- | --- |\n";
-            summary.forEach(item => {
-              table += `| ${item.targetFile} | ${item.ok} |\n`;
-            });
-            // Get the issue or pull request number
-            const number = (context.issue && context.issue.number) || (context.payload.pull_request && context.payload.pull_request.number);
-            if (number) {
-              // Get all comments of the issue or pull request
-              const comments = await github.rest.issues.listComments({
-                issue_number: number,
-                owner: context.repo.owner,
-                repo: context.repo.repo
-              });
-              // Find the existing comment
-              const existingComment = comments.data.find(comment => comment.user.login === 'github-actions[bot]');
-              // If the existing comment is found, delete it
-              if (existingComment) {
-                await github.rest.issues.deleteComment({
-                  comment_id: existingComment.id,
-                  owner: context.repo.owner,
-                  repo: context.repo.repo
-                });
-              }
-              // Create a new comment
-              await github.rest.issues.createComment({
-                issue_number: number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: table
-              });
-            } else {
-              console.log('Issue or pull request number is undefined');
+        # Remove '##' from RELEASE_NOTES
+        RELEASE_NOTES=$(echo -e "${RELEASE_NOTES}" | sed 's/## //g')
+
+        # Remove extra HTML
+        RELEASE_NOTES=$(echo -e "${RELEASE_NOTES}" | sed -r 's/<[^>]*>//g')
+
+        # Replace markdown links with confluence links
+        RELEASE_NOTES=$(echo -e "${RELEASE_NOTES}" | sed -r 's/\[([^]]+)\]\(([^)]+)\)/[\1|\2]/g')
+
+        # Replace @username with a link to the user's GitHub profile
+        RELEASE_NOTES=$(echo -e "${RELEASE_NOTES}" | sed -r 's/@([^ ]+)/[@\1|https:\/\/github.com\/\1]/g')
+
+        # Replace '\n' with '<br/>'
+        RELEASE_NOTES=$(echo -e "${RELEASE_NOTES}" | sed 's/\\n/<br\/>/g')
+
+        # Prepare the payload
+        payload=$(jq -n \
+        --arg spaceId "${{ inputs.spaceId }}" \
+        --arg status "${{ inputs.status }}" \
+        --arg title "Release: ${{ inputs.tag }}" \
+        --arg parentId "${{ inputs.parentId }}" \
+        --arg value "$RELEASE_NOTES" \
+        '{
+            "spaceId": $spaceId,
+            "status": $status,
+            "title": $title,
+            "parentId": $parentId,
+            "body": {
+            "representation": "wiki",
+            "value": $value
             }
-          debug: false
+        }'
+        )
+
+        echo "Payload: $payload"
+        response=$(curl --request POST \
+            --url '${{ inputs.ConfluenceBaseUrl }}/wiki/api/v2/pages' \
+            --user '${{ inputs.confluence_email }}:${{ inputs.confluence_api_token }}' \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --data "$payload")
+        echo "Response: $response"
+        pageId=$(echo "$response" | jq -r '.id')
+        echo "Page ID: $pageId"
+        echo "::set-output name=pageId::$pageId"
