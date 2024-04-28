@@ -105,18 +105,18 @@ jobs:
     needs: [ release ]
     steps:
 
-    - name: Publish to Confluence
-      id: run_action
-      uses: Gershon-A/publish-release-to-confluence
-      with:
-        spaceId: ${{ vars.SPACE_ID}}
-        status: 'current'
-        title: "Release: ${{ github.ref_name }}"
-        parentId: ${{ vars.PAGE_ID}}
-        ConfluenceBaseUrl: 'https://smart-cooking.atlassian.net'
-        tag: ${{ github.ref_name }}
-        confluence_email: ${{ vars.CONFLUENCE_EMAIL }}
-        confluence_api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
-        appName:   ${{ github.event.repository.name }}
-        repoOwner: ${{ github.repository_owner }}
-        repoName:  ${{ github.event.repository.name }}
+      - name: Publish to Confluence
+        id: run_action
+        uses: Gershon-A/publish-release-to-confluence
+        with:
+          spaceId: ${{ vars.SPACE_ID}}
+          status: 'current'
+          title: "Release: ${{ github.ref_name }}"
+          parentId: ${{ vars.PAGE_ID}}
+          ConfluenceBaseUrl: 'https://smart-cooking.atlassian.net'
+          tag: ${{ github.ref_name }}
+          confluence_email: ${{ vars.CONFLUENCE_EMAIL }}
+          confluence_api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+          appName:   ${{ github.event.repository.name }}
+          repoOwner: ${{ github.repository_owner }}
+          repoName:  ${{ github.event.repository.name }}
