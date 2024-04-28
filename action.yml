@@ -132,4 +132,9 @@ runs:
         echo "Response: $response"
         pageId=$(echo "$response" | jq -r '.id')
         echo "Page ID: $pageId"
+        if [ "$pageId" == "null" ]; then
+          echo "Failed to create page"
+          exit 1
+        fi
         echo "pageId=$pageId" >> $GITHUB_ENV
+        echo "::save-state name=pageId::$pageId"

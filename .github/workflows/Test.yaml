@@ -1,6 +1,6 @@
 name: Test Action
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   test:
@@ -30,8 +30,9 @@ jobs:
         id: cleanup
         if: success()
         run: |
-          echo "Delete Page"
-          pageId=${{ steps.run_action.outputs.pageId }}
+          # Retrieve the pageId output from the Run action step
+          pageId=${{ env.pageId }}
+          echo "Page ID: $pageId"
           curl --request DELETE \
-          --url 'https://smart-cooking.atlassian.net/wiki/api/v2/pages/$pageId' \
-          --user 'email@example.com:<api_token>'
+          --url "https://smart-cooking.atlassian.net/wiki/api/v2/pages/$pageId" \
+          --user "${{ vars.CONFLUENCE_EMAIL }}:${{ secrets.CONFLUENCE_API_TOKEN }}"
