@@ -137,4 +137,4 @@ runs:
           exit 1
         fi
         echo "pageId=$pageId" >> $GITHUB_ENV
-        echo "::save-state name=pageId::$pageId"
+        echo "pageId=$pageId" >> $GITHUB_ENV_FILE
