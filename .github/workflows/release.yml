@@ -105,9 +105,9 @@ jobs:
     needs: [ release ]
     steps:
 
-    - name: Run action
+    - name: Publish to Confluence
       id: run_action
-      uses: ./
+      uses: Gershon-A/publish-release-to-confluence
       with:
         spaceId: ${{ vars.SPACE_ID}}
         status: 'current'
