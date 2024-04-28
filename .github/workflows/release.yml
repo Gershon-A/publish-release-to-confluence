@@ -99,3 +99,24 @@ jobs:
 
       - name: Print next development version commit
         run: git show ${{ steps.commit-next-dev.outputs.commit_sha }} | cat
+
+  create-confluence-page:
+    runs-on: ubuntu-latest
+    needs: [ release ]
+    steps:
+
+    - name: Run action
+      id: run_action
+      uses: ./
+      with:
+        spaceId: ${{ vars.SPACE_ID}}
+        status: 'current'
+        title: "Release: ${{ github.ref_name }}"
+        parentId: ${{ vars.PAGE_ID}}
+        ConfluenceBaseUrl: 'https://smart-cooking.atlassian.net'
+        tag: ${{ github.ref_name }}
+        confluence_email: ${{ vars.CONFLUENCE_EMAIL }}
+        confluence_api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
+        appName:   ${{ github.event.repository.name }}
+        repoOwner: ${{ github.repository_owner }}
+        repoName:  ${{ github.event.repository.name }}
