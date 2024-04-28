@@ -9,6 +9,7 @@
 ## Action Proposal
 
 This GitHub Action, named "Publish to Confluence", is designed to create a release page in Confluence with the release notes. The action fetches the release notes from a GitHub release and then posts them to a specified Confluence page.
+To work properly, You need to have well structured release notes in your GitHub release. The release notes should be in markdown format.
 
 ## Setup
 

@@ -3,16 +3,16 @@ on:
   workflow_dispatch:
     inputs:
       releaseVersion:
-        description: The new version to release, e.g. 1.0.0
+        description: The new version to release, e.g. 1.0.0. (don't include the 'v' prefix)
         type: string
         required: true
-        default: 'v1.0.0'
+        default: '1.0.0'
       nextDevelopmentVersion:
         description: >
           The new version to use during development, e.g. 1.1.0-SNAPSHOT
         type: string
         required: true
-        default: 'v1.0.0-SNAPSHOT'
+        default: '1.0.0-SNAPSHOT'
       dryRun:
         description: dryRun. Don't push commits or tags.will only print the changes.
         type: boolean
@@ -118,7 +118,7 @@ jobs:
           title: "Release: ${{ github.ref_name }}"
           parentId: ${{ vars.PAGE_ID}}
           ConfluenceBaseUrl: 'https://smart-cooking.atlassian.net'
-          tag: ${{ needs.release.outputs.releaseVersion }}
+          tag: v${{ needs.release.outputs.releaseVersion }}
           confluence_email: ${{ vars.CONFLUENCE_EMAIL }}
           confluence_api_token: ${{ secrets.CONFLUENCE_API_TOKEN }}
           appName:   ${{ github.event.repository.name }}
