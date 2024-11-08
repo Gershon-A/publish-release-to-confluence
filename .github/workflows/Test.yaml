@@ -26,6 +26,10 @@ jobs:
           repoOwner: ${{ github.repository_owner }}
           repoName:  ${{ github.event.repository.name }}
 
+      - name: Set pageId output
+        id: set_page_id
+        run: echo "pageId=${{ steps.run_action.outputs.pageId }}" >> $GITHUB_ENV          
+
       - name: Clean up
         id: cleanup
         if: success()
